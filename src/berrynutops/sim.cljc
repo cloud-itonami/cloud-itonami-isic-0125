@@ -1,0 +1,54 @@
+(ns berrynutops.sim
+  "Simple simulation/demo runner for the Tree- and Bush-Fruit and Nut
+  Orchard/Grove Operations Coordinator actor. Used to validate that the
+  actor flow compiles and basic proposal flow works. Mirrors
+  `pomestoneops.sim` (cloud-itonami-isic-0124)."
+  (:require [berrynutops.operation :as operation]
+            [berrynutops.store :as store]))
+
+(defn demo
+  "Run a simple demo scenario: register an orchard/grove block, propose an
+  orchard-record log, and check the disposition flow."
+  []
+  (let [;; Create store with a registered orchard/grove block
+        st (store/mem-store
+            {:initial-orchards
+             {"orchard-001"
+              {:id "orchard-001"
+               :name "Test Grove Block"
+               :fruit-class "blueberry"}}})
+
+        ;; Build actor
+        actor (operation/build st)
+
+        ;; Create a request to log an orchard record
+        request {:op :log-orchard-record
+                 :orchard-id "orchard-001"
+                 :record-type "harvest"
+                 :count 500
+                 :notes "healthy yield"}
+
+        ;; Context with phase 0 (simulation)
+        context {:actor-id "berry-nut-ops-01"
+                 :role :orchard-operator
+                 :phase :phase-0}]
+
+    (println "=== Tree- and Bush-Fruit and Nut Orchard/Grove Operations Coordinator Demo ===")
+    (println "Demo orchard/grove block: orchard-001")
+    (println "Request: log-orchard-record")
+    (println "Phase: phase-0 (simulation)")
+    (println "Expected: escalate (phase-0 forces human review of all commits)")
+    (println)
+    (let [result (actor request context)]
+      (println "Result disposition:" (:disposition result))
+      result)))
+
+(defn -main
+  "clojure -M:run entrypoint."
+  [& _args]
+  (demo))
+
+(comment
+  ;; In a real REPL:
+  (demo)
+)
