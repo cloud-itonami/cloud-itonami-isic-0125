@@ -9,19 +9,25 @@
  ;; cost-threshold / closed-op-allowlist checks to, so those pure functions
  ;; live in `berrynutops.registry` / `berrynutops.facts` rather than
  ;; wrapping an external lib. This repo is standalone (forkable outside the
- ;; workspace); the :local/root paths only resolve inside the monorepo
- ;; checkout -- a standalone fork should override them with git
- ;; coordinates. For testing/CI without langgraph, use the core logic in
- ;; run-operation; production deployment requires the langgraph StateGraph
- ;; integration.
- :deps {}
+ ;; workspace); the :local/root path only resolves inside the monorepo
+ ;; checkout -- a standalone fork should override it with git coordinates
+ ;; (see `io.github.kotoba-lang/langgraph`'s own `deps.edn`, which pins
+ ;; `langchain` via `:git/sha` for exactly this reason).
+ ;;
+ ;; FIX (this commit): the real dependency was previously ONLY declared
+ ;; under the unused `:dev :override-deps` alias -- `:deps` was `{}`, so
+ ;; a plain `clojure -M:test`/`clojure -M:run` never had `langgraph.graph`
+ ;; on the classpath at all. It now lives in the main `:deps` map, the
+ ;; path every alias actually resolves against (mirrors
+ ;; cloud-itonami-isic-1101's `distilling` deps.edn / cloud-itonami-isic-869's
+ ;; `transportops` deps.edn, the same fix applied to the same pattern).
+ :deps {io.github.kotoba-lang/langgraph
+        {:local/root "../../kotoba-lang/langgraph"}}
  :aliases
  {;; offline workspace dev -- pin transitive langchain to local checkout
   :dev {:override-deps
         {io.github.kotoba-lang/langchain
-         {:local/root "../../kotoba-lang/langchain"}
-        io.github.kotoba-lang/langgraph
-        {:local/root "../../kotoba-lang/langgraph"}}}
+         {:local/root "../../kotoba-lang/langchain"}}}
   ;; clojure -M:dev:run  -> drive the demo through one OperationActor
   :run {:main-opts ["-m" "berrynutops.sim"]}
   :test {:extra-paths ["test"]

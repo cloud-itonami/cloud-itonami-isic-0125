@@ -15,16 +15,25 @@ full transparency over decisions.
 **Maturity: `:implemented`.** `src/berrynutops/` implements the
 `BerryNutOpsAdvisor` (`berrynutops.advisor`) and the independent
 `BerryNutOperationsGovernor` (`berrynutops.governor`), composed by
-`berrynutops.operation` following the itonami actor pattern
-(ADR-2607011000): `advise -> govern -> phase-gate -> commit | escalate |
-hold`. See [Testing](#testing) below for the current green test count
+`berrynutops.operation` into a **genuinely compiled `langgraph-clj`
+`StateGraph`** (`langgraph.graph/state-graph` + `compile-graph`,
+`interrupt-before #{:request-approval}` for real checkpointed
+human-in-the-loop resume): `intake -> advise -> govern -> decide -+->
+commit / request-approval -> commit / hold`. Every committed/held/
+approval-rejected decision fact lands in `berrynutops.store`'s
+append-only audit ledger (`ledger` / `append-ledger!`), genuinely wired
+into the graph's `:commit`/`:hold` terminal nodes. See
+[Testing](#testing) below for the current green test count
 (`clojure -M:test`).
 
-`berrynutops.operation` is a synchronous stub of this flow (see its
-docstring) — production wiring into a `langgraph-clj` StateGraph with
-`interrupt-before`/checkpoint-based human-in-the-loop resume for escalated
-operations is deferred, mirroring `cloud-itonami-isic-0124`'s own
-`pomestoneops.operation`.
+An earlier version of this repository claimed `:implemented` while
+`operation.cljc`'s own docstring admitted the StateGraph integration was
+"deferred" (a hand-rolled closure with zero `langgraph.graph` calls), the
+real `langgraph` dependency sat unused under the `:dev :override-deps`
+alias (`deps.edn`'s main `:deps` was `{}`), and `store.cljc` had no
+ledger concept anywhere in `src/`. All three are fixed now — see
+`blueprint.edn`'s `:itonami.blueprint/implemented-slice` for the full
+diff summary.
 
 ## What this does NOT do
 
@@ -114,12 +123,12 @@ Mirrors `cloud-itonami-isic-0124` (`pomestoneops.*`) module-for-module:
 
 - `berrynutops.facts` — reference data: supply-category cost thresholds, fruit classes
 - `berrynutops.registry` — pure independent verification functions (cost/count/confidence)
-- `berrynutops.store` — `Store` protocol + in-memory `MemStore` (orchard/grove-block registration lookup)
+- `berrynutops.store` — `Store` protocol + in-memory `MemStore` (orchard/grove-block registration lookup, append-only audit ledger)
 - `berrynutops.advisor` — `Advisor` protocol + `MockAdvisor` (the sealed LLM/decision node)
 - `berrynutops.governor` — `BerryNutOperationsGovernor`: hard invariants + escalation gates
 - `berrynutops.phase` — 0→3 rollout phase gate
-- `berrynutops.operation` — composes advisor → governor → phase into one operation run
-- `berrynutops.sim` — demo runner (`clojure -M:run`)
+- `berrynutops.operation` — compiles advisor → governor → phase into a real `langgraph-clj` `StateGraph` (`build`), with checkpointed `interrupt-before` human-in-the-loop resume
+- `berrynutops.sim` — demo runner (`clojure -M:run`), drives the compiled graph end-to-end via `langgraph.graph/run*`
 
 ## Capability layer
 

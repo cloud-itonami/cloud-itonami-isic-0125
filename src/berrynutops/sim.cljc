@@ -1,54 +1,95 @@
 (ns berrynutops.sim
-  "Simple simulation/demo runner for the Tree- and Bush-Fruit and Nut
-  Orchard/Grove Operations Coordinator actor. Used to validate that the
-  actor flow compiles and basic proposal flow works. Mirrors
-  `pomestoneops.sim` (cloud-itonami-isic-0124)."
-  (:require [berrynutops.operation :as operation]
+  "Demo driver -- `clojure -M:run` / `clojure -M:dev:run`. Drives the REAL
+  compiled `langgraph-clj` `StateGraph` (`berrynutops.operation/build`)
+  end-to-end through an always-escalate crop-health-concern flag
+  (agronomist approves), a low-risk auto-commit (schedule-field-
+  operation), a phase-0 sandbox escalation, and a HARD-block scenario
+  (unregistered orchard), then prints the resulting audit ledger. Mirrors
+  `distilling.sim` (cloud-itonami-isic-1101) / `knitwear.sim`
+  (cloud-itonami-isic-1430).
+
+  FIX (this commit): the previous version registered a single orchard,
+  built the actor via `operation/build`, and invoked the RETURN VALUE AS
+  A PLAIN FUNCTION (`(actor request context)`) -- because the old
+  `build` was a hand-rolled stub closure, never a real `langgraph.graph`
+  compiled graph. That call shape no longer exists; `build` now returns
+  a genuine `CompiledGraph`, driven via `langgraph.graph/run*`."
+  (:require [langgraph.graph :as g]
+            [berrynutops.operation :as operation]
             [berrynutops.store :as store]))
 
+(defn scenario [title]
+  (println "\n==========================================")
+  (println (str "Scenario: " title))
+  (println "=========================================="))
+
+(defn- exec [actor tid request context]
+  (g/run* actor {:request request :context context} {:thread-id tid}))
+
+(defn- approve! [actor tid by]
+  (g/run* actor {:approval {:status :approved :by by}}
+          {:thread-id tid :resume? true}))
+
+(defn- registered-orchard []
+  {:id "orchard-001"
+   :name "Test Grove Block"
+   :fruit-class "blueberry"})
+
 (defn demo
-  "Run a simple demo scenario: register an orchard/grove block, propose an
-  orchard-record log, and check the disposition flow."
+  "Run the compiled StateGraph through an always-escalating
+  crop-health-concern flag (approved by a human agronomist), a low-risk
+  auto-commit (field-operation scheduling), a phase-0 sandbox
+  escalation, and a HARD-block unregistered-orchard scenario; print each
+  result and the final audit ledger."
   []
-  (let [;; Create store with a registered orchard/grove block
-        st (store/mem-store
-            {:initial-orchards
-             {"orchard-001"
-              {:id "orchard-001"
-               :name "Test Grove Block"
-               :fruit-class "blueberry"}}})
+  (println "Tree- and Bush-Fruit and Nut Orchard/Grove Operations Coordinator - Demo")
 
-        ;; Build actor
-        actor (operation/build st)
+  (scenario "Always-escalating: flag-crop-health-concern (agronomist approves)")
+  (let [s (store/mem-store {:initial-orchards {"orchard-001" (registered-orchard)}})
+        actor (operation/build s)
+        held (exec actor "t1" {:op :flag-crop-health-concern :orchard-id "orchard-001"
+                               :concern "spotted wing drosophila suspected"}
+                   {:actor-id "berry-nut-ops-01" :phase :phase-2})]
+    (println "Status:" (:status held) "Frontier:" (:frontier held))
+    (println "-- agronomist approves --")
+    (let [approved (approve! actor "t1" "agronomist-01")]
+      (println "Decision:" (:decision (:state approved)))
+      (println "Audit:" (mapv (fn [fact] (dissoc fact :violations)) (:audit (:state approved))))
+      (println "Ledger:" (store/ledger s))))
 
-        ;; Create a request to log an orchard record
-        request {:op :log-orchard-record
-                 :orchard-id "orchard-001"
-                 :record-type "harvest"
-                 :count 500
-                 :notes "healthy yield"}
+  (scenario "Phase 1: Auto-commit field-operation scheduling (low-risk, no human needed)")
+  (let [s (store/mem-store {:initial-orchards {"orchard-001" (registered-orchard)}})
+        actor (operation/build s)
+        result (exec actor "t2" {:op :schedule-field-operation :orchard-id "orchard-001"
+                                 :requested-date "2026-08-01"}
+                     {:actor-id "berry-nut-ops-01" :phase :phase-1})]
+    (println "Decision:" (:decision (:state result)))
+    (println "Ledger:" (store/ledger s)))
 
-        ;; Context with phase 0 (simulation)
-        context {:actor-id "berry-nut-ops-01"
-                 :role :orchard-operator
-                 :phase :phase-0}]
+  (scenario "Phase 0 (sandbox): clean proposal still escalates -- nothing auto-commits")
+  (let [s (store/mem-store {:initial-orchards {"orchard-001" (registered-orchard)}})
+        actor (operation/build s)
+        held (exec actor "t3" {:op :schedule-field-operation :orchard-id "orchard-001"
+                               :requested-date "2026-08-01"}
+                   {:actor-id "berry-nut-ops-01" :phase :phase-0})]
+    (println "Status:" (:status held) "Frontier:" (:frontier held))
+    (println "Ledger (should be empty until approval):" (store/ledger s)))
 
-    (println "=== Tree- and Bush-Fruit and Nut Orchard/Grove Operations Coordinator Demo ===")
-    (println "Demo orchard/grove block: orchard-001")
-    (println "Request: log-orchard-record")
-    (println "Phase: phase-0 (simulation)")
-    (println "Expected: escalate (phase-0 forces human review of all commits)")
-    (println)
-    (let [result (actor request context)]
-      (println "Result disposition:" (:disposition result))
-      result)))
+  (scenario "HARD-block: orchard/grove block not registered")
+  (let [s (store/mem-store)
+        actor (operation/build s)
+        result (exec actor "t4" {:op :log-orchard-record :orchard-id "orchard-ghost"
+                                 :count 500}
+                     {:actor-id "berry-nut-ops-01" :phase :phase-3})]
+    (println "Decision:" (:decision (:state result)))
+    (println "Violations:" (mapv :rule (:violations (first (store/ledger s))))))
 
-(defn -main
-  "clojure -M:run entrypoint."
-  [& _args]
+  (println "\n==========================================")
+  (println "Demo completed successfully")
+  (println "=========================================="))
+
+(defn -main [& _args]
   (demo))
 
 (comment
-  ;; In a real REPL:
-  (demo)
-)
+  (demo))

@@ -9,4 +9,49 @@
  :itonami.blueprint/required-technologies [:robotics :identity :forms :audit-ledger]
  :itonami.blueprint/optional-technologies [:telemetry :optimization :dmn :bpmn]
  :itonami.blueprint/status :public-oss
- :itonami.blueprint/maturity :implemented}
+ :itonami.blueprint/maturity :implemented
+ :itonami.blueprint/implemented-slice
+ "BerryNutOpsAdvisor ⊣ Tree- and Bush-Fruit and Nut Operations Governor,
+ langgraph-clj StateGraph (langgraph.graph, berrynutops.operation/build),
+ append-only audit ledger (berrynutops.store/ledger + append-ledger!,
+ MemStore). Fixes a severe prior gap, worse than the usual deferred-stub
+ pattern: `deps.edn` declared the real `io.github.kotoba-lang/langgraph`
+ dependency ONLY under the unused `:dev :override-deps` alias (main
+ `:deps` was `{}`), so a plain `clojure -M:test`/`clojure -M:run` never
+ had `langgraph.graph` on the classpath at all; `operation.cljc`'s OWN
+ docstring admitted \"langgraph-clj StateGraph integration is deferred.
+ This stub version...\" -- `build` returned a hand-rolled closure over
+ `run-operation` with ZERO `state-graph`/`add-node`/`interrupt-before`
+ calls anywhere; and `store.cljc` had NO `ledger`/`append-ledger!`
+ function AT ALL -- not dead code, the concept was entirely absent from
+ `src/`, despite the README's \"audit ledger\" line and this file's own
+ `:required-technologies [... :audit-ledger]` implying one should exist.
+ `blueprint.edn` nonetheless claimed `:itonami.blueprint/maturity
+ :implemented`, which was false given all of the above.
+ Now: the real dependency lives in the main `:deps` map; a genuinely
+ compiled StateGraph (`:intake -> :advise -> :govern -> :decide -+->
+ :commit / :request-approval -> :commit / :hold`) with
+ `interrupt-before #{:request-approval}` + in-memory checkpointer for
+ real human-in-the-loop resume; and a real `berrynutops.store/ledger` +
+ `append-ledger!` genuinely wired into the `:commit`/`:hold` graph
+ nodes, not test-only. `berrynutops.advisor`'s proposal builder and
+ `berrynutops.governor`'s hard/escalate checks (orchard/grove-block
+ registration, closed op-allowlist, effect-must-be-:propose,
+ field-equipment/spray-application permanent block, non-positive
+ orchard-record quantity, category cost threshold, always-escalating
+ crop-health-concern) and `berrynutops.phase`'s 0->3 rollout gate are
+ reused UNCHANGED -- this fix only wires the existing orchard/grove
+ operations-coordination domain policy into a real compiled graph and a
+ real ledger, it does not redesign it.
+ Proven end-to-end by `test/berrynutops/operation_test.cljc` (ledger
+ stays empty until a real commit, hold-for-unregistered-orchard/
+ non-positive-quantity/blocked-field-equipment even at phase-3,
+ phase-0-sandbox escalates a clean proposal, escalate-then-approve and
+ escalate-then-reject for the always-escalating crop-health-concern flag,
+ high-cost supply-order escalation, never-auto-commit for
+ crop-health-concern at every phase) through the REAL compiled graph,
+ plus a `clojure -M:dev:run` demo runner producing real ledger entries
+ for every scenario. All pre-existing advisor/governor/facts/phase/
+ registry/store tests are unchanged and still passing. CI
+ (`.github/workflows/ci.yml`, sibling-checkout pattern for
+ `:local/root` deps) was missing entirely and is added in this fix."}
