@@ -1,4 +1,4 @@
-{:itonami.blueprint/id "cloud-itonami-0125"
+{:itonami.blueprint/id "cloud-itonami-isic-0125"
  :itonami.blueprint/name "Tree- and Bush-Fruit and Nut Orchard/Grove Operations Coordination"
  :itonami.blueprint/isic-rev5 "0125"
  :itonami.blueprint/domain :agriculture/other-tree-bush-fruit-and-nut-growing
