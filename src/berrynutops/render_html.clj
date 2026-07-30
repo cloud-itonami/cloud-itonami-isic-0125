@@ -41,7 +41,7 @@
     (exec! actor "t4" {:op :log-orchard-record :orchard-id "orchard-ghost" :count 500} (ctx :phase-3))
     db))
 
-(defn- esc [v] (-> (str v) (str/replace "&" "&amp;") (str/replace "<" "&lt;) (str/replace ">" "&gt;")))
+(defn- esc [v] (-> (str v) (str/replace "&" "&amp;") (str/replace "<" "&lt;") (str/replace ">" "&gt;")))
 (defn- hold-rule [f] (or (some-> f :basis first) (some-> f :violations first :rule)))
 (defn- last-fact-for [ledger oid] (last (filter #(= (:subject %) oid) ledger)))
 (defn- status-cell [ledger oid]
