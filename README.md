@@ -24,7 +24,7 @@ approval-rejected decision fact lands in `berrynutops.store`'s
 append-only audit ledger (`ledger` / `append-ledger!`), genuinely wired
 into the graph's `:commit`/`:hold` terminal nodes. See
 [Testing](#testing) below for the current green test count
-(`clojure -M:test`).
+(`kbb -M:test`).
 
 An earlier version of this repository claimed `:implemented` while
 `operation.cljc`'s own docstring admitted the StateGraph integration was
@@ -128,7 +128,7 @@ Mirrors `cloud-itonami-isic-0124` (`pomestoneops.*`) module-for-module:
 - `berrynutops.governor` — `BerryNutOperationsGovernor`: hard invariants + escalation gates
 - `berrynutops.phase` — 0→3 rollout phase gate
 - `berrynutops.operation` — compiles advisor → governor → phase into a real `langgraph-clj` `StateGraph` (`build`), with checkpointed `interrupt-before` human-in-the-loop resume
-- `berrynutops.sim` — demo runner (`clojure -M:run`), drives the compiled graph end-to-end via `langgraph.graph/run*`
+- `berrynutops.sim` — demo runner (`kbb -M:run`), drives the compiled graph end-to-end via `langgraph.graph/run*`
 
 ## Capability layer
 
@@ -146,9 +146,9 @@ See [`docs/business-model.md`](docs/business-model.md) and
 ## Testing
 
 ```bash
-clojure -M:test   # run the suite (see raw output for tests/assertions)
-clojure -M:lint   # clj-kondo, 0 errors / 0 warnings
-clojure -M:run    # demo runner
+kbb -M:test   # run the suite (see raw output for tests/assertions)
+kbb -M:lint   # clj-kondo, 0 errors / 0 warnings
+kbb -M:run    # demo runner
 ```
 
 ## License

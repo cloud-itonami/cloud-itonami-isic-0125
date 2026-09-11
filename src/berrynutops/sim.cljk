@@ -1,5 +1,5 @@
 (ns berrynutops.sim
-  "Demo driver -- `clojure -M:run` / `clojure -M:dev:run`. Drives the REAL
+  "Demo driver -- `kbb -M:run` / `kbb -M:dev:run`. Drives the REAL
   compiled `langgraph-clj` `StateGraph` (`berrynutops.operation/build`)
   end-to-end through an always-escalate crop-health-concern flag
   (agronomist approves), a low-risk auto-commit (schedule-field-
