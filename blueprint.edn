@@ -17,7 +17,7 @@
  MemStore). Fixes a severe prior gap, worse than the usual deferred-stub
  pattern: `deps.edn` declared the real `io.github.kotoba-lang/langgraph`
  dependency ONLY under the unused `:dev :override-deps` alias (main
- `:deps` was `{}`), so a plain `clojure -M:test`/`clojure -M:run` never
+ `:deps` was `{}`), so a plain `kbb -M:test`/`kbb -M:run` never
  had `langgraph.graph` on the classpath at all; `operation.cljc`'s OWN
  docstring admitted \"langgraph-clj StateGraph integration is deferred.
  This stub version...\" -- `build` returned a hand-rolled closure over
@@ -50,7 +50,7 @@
  escalate-then-reject for the always-escalating crop-health-concern flag,
  high-cost supply-order escalation, never-auto-commit for
  crop-health-concern at every phase) through the REAL compiled graph,
- plus a `clojure -M:dev:run` demo runner producing real ledger entries
+ plus a `kbb -M:dev:run` demo runner producing real ledger entries
  for every scenario. All pre-existing advisor/governor/facts/phase/
  registry/store tests are unchanged and still passing. CI
  (`.github/workflows/ci.yml`, sibling-checkout pattern for
