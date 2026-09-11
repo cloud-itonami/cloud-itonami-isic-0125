@@ -43,7 +43,7 @@
  reused UNCHANGED -- this fix only wires the existing orchard/grove
  operations-coordination domain policy into a real compiled graph and a
  real ledger, it does not redesign it.
- Proven end-to-end by `test/berrynutops/operation_test.cljc` (ledger
+ Proven end-to-end by `test/berrynutops/operation_test.cljk` (ledger
  stays empty until a real commit, hold-for-unregistered-orchard/
  non-positive-quantity/blocked-field-equipment even at phase-3,
  phase-0-sandbox escalates a clean proposal, escalate-then-approve and
