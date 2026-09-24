@@ -1,0 +1,43 @@
+;; What this vertical's robot physically does, declared for
+;; kotoba.robotics.process (kotoba-lang/robotics). `kbb -M:dev:physics` runs it.
+;;
+;; README "Robotics premise": a facility-management robot keeps orchard/grove
+;; block records, schedules field operations and handles supplies for a grower
+;; of other tree and bush fruits and nuts (ISIC 0125, e.g. walnuts, berries).
+;; Its physical work: moving harvested nuts to the dryer, and running the
+;; walnut dryer whose heated air warms the nut bed.
+;;
+;; Every number without a cited source is marked `estimate` in its :basis.
+;; Replacing an estimate with a sourced value is this bot's growth work.
+{:physics/schema "itonami.physical-ai.spec.v1"
+ :repo "cloud-itonami/cloud-itonami-isic-0125"
+ :cases
+ [{:id :nut-hopper-to-dryer
+   :kind :transport
+   :procedure "hopper cart carries a load of hulled walnuts from the huller to the dryer bin"
+   :params {:mass-kg 300.0 :distance-m 150.0 :v-max-mps 1.5 :a-max-mps2 0.5
+            :brake-decel-mps2 1.0 :drive-force-n 1300.0 :crr 0.04
+            :cog-height-m 0.90 :support-half-length-m 0.60 :max-time-s 3600.0}
+   :sweep {:param :payload-kg :values [300.0 600.0 900.0 1200.0 1500.0]}
+   :quantity :cycle-time-s
+   :limit {:max 120.0 :basis "estimate: one hopper leg inside the huller's hopper-fill time"}
+   :boundary {:lo 50.0 :hi 4000.0}}
+  {:id :walnut-dryer-bed
+   :kind :thermal
+   :procedure "the dryer blows heated air onto a 0.3 m walnut bed for 8 hours; the nuts at the bottom of the bed, against the plenum, are judged"
+   :params {:thickness-m 0.30 :conductivity-w-mk 0.12 :density-kg-m3 450.0 :specific-heat-j-kgk 1800.0
+            :t0-c 20.0 :h-front-w-m2k 25.0 :t-back-ambient-c 20.0 :h-back-w-m2k 5.0
+            :threshold-c 43.0 :duration-s 28800.0 :nodes 11}
+   :sweep {:param :t-hot-c :values [35.0 40.0 43.0 50.0 60.0]}
+   :quantity :final-front-c
+   :limit {:max 43.0 :basis "estimate: walnut kernels held at or below ~43 C in drying to protect kernel colour and oil quality (conduction only; ignores air through-flow)"}
+   :boundary {:lo 30.0 :hi 80.0}}
+  {:id :berry-flat-onto-cart
+   :kind :manipulator
+   :procedure "arm lifts a stack of filled berry flats from the row onto the field cart"
+   :params {:l1-m 0.50 :l2-m 0.40 :m1-kg 5.0 :m2-kg 3.5
+            :from [0.60 -0.10] :to [0.30 0.60] :duration-s 2.0 :steps 400}
+   :sweep {:param :payload-kg :values [2.0 4.0 6.0 8.0 10.0]}
+   :quantity :peak-tau1-nm
+   :limit {:max 90.0 :basis "estimate: continuous shoulder torque of a 7-10 kg-class collaborative arm"}
+   :boundary {:lo 0.5 :hi 40.0}}]}
