@@ -18,7 +18,7 @@
   a governor rejection blocks commit entirely. Mirrors
   `distilling.operation-test` (cloud-itonami-isic-1101) /
   `knitwear.operation-test` (cloud-itonami-isic-1430)."
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [kotoba.test :refer [deftest is testing]]
             [langgraph.graph :as g]
             [berrynutops.operation :as op]
             [berrynutops.store :as store]))
